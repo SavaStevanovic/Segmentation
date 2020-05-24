@@ -9,7 +9,7 @@ import os
 th_count = 12
 dataset_name = 'custom_car'
 
-net = networks.Unet(block = blocks.ConvBlock, inplanes = 16, in_dim=3, out_dim=2, depth=4)
+net = networks.Unet(block = blocks.ConvBlock, inplanes = 64, in_dim=3, out_dim=2, depth=4, norm_layer=torch.nn.InstanceNorm2d)
 data_provider = SegmentationDatasetProvider(net, batch_size=1, th_count=th_count)
 
 fit(net, data_provider.trainloader, data_provider.validationloader, 

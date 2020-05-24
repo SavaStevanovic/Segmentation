@@ -8,10 +8,10 @@ class SegmentationDatasetProvider():
     def __init__(self, net,  batch_size=1, train_transforms=None, val_transforms=None, th_count=mu.cpu_count()):
         if train_transforms is None:
             train_transforms = augmentation.PairCompose([
-                                            augmentation.ResizeDownToSizeTransform(512),
+                                            augmentation.ResizeDownToSizeTransform(768),
                                             augmentation.RandomResizeTransform(),
                                             augmentation.RandomHorizontalFlipTransform(),
-                                            augmentation.RandomCropTransform((256, 256)),
+                                            augmentation.RandomCropTransform((512, 512)),
                                             # augmentation.RandomNoiseTransform(),
                                             augmentation.RandomColorJitterTransform(),
                                             # augmentation.RandomBlurTransform(),

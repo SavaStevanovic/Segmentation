@@ -7,7 +7,7 @@ import torch
 
 class Unet(nn.Module, utils.Identifier):
 
-    def __init__(self, block, inplanes, in_dim, out_dim, depth=4, norm_layer=nn.BatchNorm2d):
+    def __init__(self, block, inplanes, in_dim, out_dim, depth=4, norm_layer=None):
         super(Unet, self).__init__()
 
         self.depth = depth
@@ -30,7 +30,7 @@ class Unet(nn.Module, utils.Identifier):
         return block(planes, planes*2, norm_layer=self._norm_layer)
 
     def _make_mid_layer(self, block, planes):
-        return nn.Sequential(nn.Dropout2d(0.5), block(planes, planes, norm_layer=self._norm_layer))
+        return block(planes, planes, norm_layer=self._norm_layer)
 
     def _make_up_layer(self, block, planes):
         return nn.ConvTranspose2d(planes*2, planes, 2, 2)

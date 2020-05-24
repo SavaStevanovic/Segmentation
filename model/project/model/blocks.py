@@ -2,25 +2,6 @@ import torch.nn as nn
 from model import utils
 
 
-class ResidualBlock(nn.Module, utils.Identifier):
-
-    def __init__(self, block, downsample=None):
-        super(ResidualBlock, self).__init__()
-
-        self.block = block
-        self.downsample = downsample
-
-    def forward(self, x):
-        identity = x
-        out = self.block(x)
-
-        if self.downsample:
-            identity = self.downsample(x)
-        out += identity
-
-        return out
-
-
 class PreActivationBlock(nn.Module, utils.Identifier):
 
     def __init__(self, inplanes, planes, stride=1, norm_layer=nn.InstanceNorm2d):
@@ -84,11 +65,11 @@ class SqueezeExcitationLayer(nn.Module, utils.Identifier):
 
 class SqueezeExcitationBlock(nn.Module, utils.Identifier):
 
-    def __init__(self, inplanes, planes, stride=1, norm_layer=nn.InstanceNorm2d, reduction=16):
+    def __init__(self, inplanes, planes, norm_layer=nn.InstanceNorm2d, reduction=16):
         super(SqueezeExcitationBlock, self).__init__()
 
         self.sequential = nn.Sequential(
-            PreActivationBlock(inplanes, planes, stride, norm_layer),
+            ConvBlock(inplanes, planes, norm_layer),
             SqueezeExcitationLayer(planes, reduction)
         )
 
@@ -102,8 +83,8 @@ class EfficientNetBlock(nn.Module, utils.Identifier):
         super(EfficientNetBlock, self).__init__()
 
         self.sequential = nn.Sequential(
-            InvertedBlock(inplanes, planes, stride, norm_layer, expand_ratio=6),
-            SqueezeExcitationLayer(planes, reduction)
+            InvertedBlock(inplanes, planes, stride, norm_layer, expand_ratio=expand_ratio),
+            SqueezeExcitationLayer(planes, reduction),
         )
 
     def forward(self, x):
@@ -111,7 +92,7 @@ class EfficientNetBlock(nn.Module, utils.Identifier):
 
 class ConvBlock(nn.Module, utils.Identifier):
 
-    def __init__(self, inplanes, planes, block_count=2, norm_layer=nn.BatchNorm2d):
+    def __init__(self, inplanes, planes, norm_layer=None):
         super(ConvBlock, self).__init__()
         self.inplanes = inplanes
         self.planes = planes

@@ -10,26 +10,31 @@ import json
 from functools import reduce
 from torchsummary import summary
 from sklearn.metrics import f1_score
+from model_fitting.losses import SegmentationLoss
 import numpy as np
 
 def fit_epoch(net, dataloader, lr_rate, epoch=1):
     net.train()
     optimizer = torch.optim.Adam(net.parameters(), lr_rate)
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = SegmentationLoss()
     losses = 0.0
+    total_focal_loss = 0.0
+    total_dice_loss = 0.0
     f1_metric = 0.0
     images = None
     for i, data in enumerate(tqdm(dataloader)):
         image, labels = data
         optimizer.zero_grad()
         outputs = net(image.cuda())
-        loss = criterion(outputs, labels.cuda())
+        loss, focal_loss, dice_loss = criterion(outputs, labels.cuda())
         loss.backward()
         optimizer.step()
         losses += loss.item()
+        total_focal_loss += focal_loss
+        total_dice_loss += dice_loss
         outputs = outputs.softmax(1).detach().cpu().numpy()
         output_threshold = (outputs[:, 1] > 0.5).astype('float')
-        f1_metric += f1_score(output_threshold.flatten(), labels.flatten())
+        f1_metric += f1_score(output_threshold.flatten(), labels.flatten(), average='weighted')
 
         if i>=len(dataloader)-1:
             images = (( image.numpy(), 
@@ -38,7 +43,7 @@ def fit_epoch(net, dataloader, lr_rate, epoch=1):
                         labels.numpy()))
         
     data_len = len(dataloader)
-    return losses/data_len, f1_metric/data_len, images
+    return losses/data_len, f1_metric/data_len, total_focal_loss/data_len, total_dice_loss/data_len, images
 
 def fit(net, trainloader, validationloader, dataset_name, epochs=1000, lower_learning_period=10):
     model_dir_header = net.get_identifier()
@@ -53,13 +58,15 @@ def fit(net, trainloader, validationloader, dataset_name, epochs=1000, lower_lea
     summary(net, (3, 512, 512))
     writer = SummaryWriter(os.path.join('logs', model_dir_header))
     for epoch in range(train_config.epoch, epochs):
-        loss, f1_score, samples = fit_epoch(net, trainloader, train_config.learning_rate, epoch=epoch)
+        loss, f1_score, focal_loss, dice_loss, samples = fit_epoch(net, trainloader, train_config.learning_rate, epoch=epoch)
+        writer.add_scalars('Train/Metrics', {'focal_loss': focal_loss, 'dice_loss':dice_loss}, epoch)
         writer.add_scalar('Train/Metrics/loss', loss, epoch)
         writer.add_scalar('Train/Metrics/f1_score', f1_score, epoch)
         grid = images_display.join_images(samples)
         writer.add_images('train_sample', grid, epoch, dataformats='CHW')
         
-        val_loss, val_f1_score, samples = metrics(net, validationloader, epoch)
+        val_loss, val_f1_score, val_focal_loss, val_dice_loss, samples = metrics(net, validationloader, epoch)
+        writer.add_scalars('Validation/Metrics', {'focal_loss': val_focal_loss, 'dice_loss':val_dice_loss}, epoch)
         writer.add_scalar('Validation/Metrics/loss', val_loss, epoch)
         writer.add_scalar('Validation/Metrics/f1_score', val_f1_score, epoch)
         grid = images_display.join_image_batches(samples)
