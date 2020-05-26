@@ -21,7 +21,7 @@ def fit_epoch(net, dataloader, lr_rate, epoch=1):
     total_focal_loss = 0.0
     total_dice_loss = 0.0
     f1_metric = 0.0
-    images = None
+    images = []
     for i, data in enumerate(tqdm(dataloader)):
         image, labels = data
         optimizer.zero_grad()
@@ -36,11 +36,11 @@ def fit_epoch(net, dataloader, lr_rate, epoch=1):
         output_threshold = (outputs[:, 1] > 0.5).astype('float')
         f1_metric += f1_score(output_threshold.flatten(), labels.flatten(), average='weighted')
 
-        if i>=len(dataloader)-1:
-            images = (( image.numpy(), 
-                        outputs[:, 1], 
-                        output_threshold,
-                        labels.numpy()))
+        if i>=len(dataloader)-5:
+            images.append(( image.numpy(), 
+                            outputs[:, 1], 
+                            output_threshold,
+                            labels.numpy()))
         
     data_len = len(dataloader)
     return losses/data_len, f1_metric/data_len, total_focal_loss/data_len, total_dice_loss/data_len, images
@@ -62,7 +62,7 @@ def fit(net, trainloader, validationloader, dataset_name, epochs=1000, lower_lea
         writer.add_scalars('Train/Metrics', {'focal_loss': focal_loss, 'dice_loss':dice_loss}, epoch)
         writer.add_scalar('Train/Metrics/loss', loss, epoch)
         writer.add_scalar('Train/Metrics/f1_score', f1_score, epoch)
-        grid = images_display.join_images(samples)
+        grid = images_display.join_image_batches(samples)
         writer.add_images('train_sample', grid, epoch, dataformats='CHW')
         
         val_loss, val_f1_score, val_focal_loss, val_dice_loss, samples = metrics(net, validationloader, epoch)
@@ -90,4 +90,19 @@ def fit(net, trainloader, validationloader, dataset_name, epochs=1000, lower_lea
         torch.save(net, checkpoint_name_path)
         torch.save(net.state_dict(), checkpoint_name_path.replace('.pth', '_state_dict.pth'))
     print('Finished Training')
-    return best_map
+    return train_config.best_metric
+
+def test(net, testloader, dataset_name,):
+    model_dir_header = net.get_identifier()
+    chp_dir = os.path.join('checkpoints', model_dir_header)
+    checkpoint_name_path = os.path.join(chp_dir, '{}_checkpoints_final.pth'.format(dataset_name))
+    net = torch.load(checkpoint_name_path)
+    net.cuda()
+    writer = SummaryWriter(os.path.join('logs', model_dir_header))
+        
+    test_loss, test_f1_score, test_focal_loss, test_dice_loss, samples = metrics(net, testloader, 0)
+    writer.add_scalars('Test/Metrics', {'focal_loss': test_focal_loss, 'dice_loss':test_dice_loss}, 0)
+    writer.add_scalar('Test/Metrics/loss', test_loss, 0)
+    writer.add_scalar('Test/Metrics/f1_score', test_f1_score, 0)
+    grid = images_display.join_image_batches(samples)
+    writer.add_images('Test_sample', grid, 0, dataformats='HWC')

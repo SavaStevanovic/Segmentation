@@ -120,8 +120,6 @@ class UpConvBlock(nn.Module, utils.Identifier):
 
         layers = []
         layers.append(nn.ConvTranspose2d(inplanes, planes, 2, 2, output_padding=1, bias=True))
-        if norm_layer is not None:
-            layers.append(norm_layer(planes))
         layers.append(nn.ReLU(True))
 
         self.sequential = nn.Sequential(*layers)

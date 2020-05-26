@@ -2,7 +2,7 @@ import torch
 from model import blocks
 from model import networks
 from data_loader.dataset_provider import SegmentationDatasetProvider
-from model_fitting.train import fit
+from model_fitting.train import fit, test
 import os
 
 
@@ -16,3 +16,5 @@ fit(net, data_provider.trainloader, data_provider.validationloader,
     dataset_name = dataset_name, 
     epochs = 1000, 
     lower_learning_period = 5)      
+
+test(net, data_provider.testloader, dataset_name = dataset_name)
