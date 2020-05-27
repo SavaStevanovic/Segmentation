@@ -9,8 +9,9 @@ import os
 th_count = 12
 dataset_name = 'custom_car'
 
-net = networks.Unet(block = blocks.ConvBlock, inplanes = 64, in_dim=3, out_dim=2, depth=4, norm_layer=torch.nn.InstanceNorm2d)
-data_provider = SegmentationDatasetProvider(net, batch_size=1, th_count=th_count)
+net_backbone = networks.ResNetBackbone(block = blocks.BasicBlock, block_counts = [3, 4, 6], inplanes=64)
+net = networks.DeepLabV3Plus(net_backbone, 2)
+data_provider = SegmentationDatasetProvider(net, batch_size=4, th_count=th_count)
 
 fit(net, data_provider.trainloader, data_provider.validationloader, 
     dataset_name = dataset_name, 

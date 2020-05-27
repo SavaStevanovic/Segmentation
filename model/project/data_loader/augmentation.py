@@ -110,7 +110,7 @@ class PaddTransform(object):
         padding_y = self.pad_size-image.size[1]%self.pad_size
         padding_y = (padding_y!=self.pad_size) * padding_y
         image_padded = transforms.functional.pad(image, (0, 0, padding_x, padding_y))
-        label_padded = transforms.functional.pad(label, (0, 0, padding_x, padding_y))
+        label_padded = transforms.functional.pad(label, (0, 0, padding_x, padding_y), fill=255)
         return image_padded, label_padded
 
 class OutputTransform(object):

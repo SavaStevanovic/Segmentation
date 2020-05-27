@@ -63,7 +63,7 @@ def fit(net, trainloader, validationloader, dataset_name, epochs=1000, lower_lea
         writer.add_scalar('Train/Metrics/loss', loss, epoch)
         writer.add_scalar('Train/Metrics/f1_score', f1_score, epoch)
         grid = images_display.join_image_batches(samples)
-        writer.add_images('train_sample', grid, epoch, dataformats='CHW')
+        writer.add_images('train_sample', grid, epoch, dataformats='HWC')
         
         val_loss, val_f1_score, val_focal_loss, val_dice_loss, samples = metrics(net, validationloader, epoch)
         writer.add_scalars('Validation/Metrics', {'focal_loss': val_focal_loss, 'dice_loss':val_dice_loss}, epoch)
