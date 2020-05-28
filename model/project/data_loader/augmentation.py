@@ -11,9 +11,10 @@ class PairCompose(object):
         self.transforms = transforms
 
     def __call__(self, img, label):
+        data = (img, label)
         for t in self.transforms:
-            img, label = t(img, label)
-        return img, label
+            data = t(*data)
+        return data
 
     def __repr__(self):
         format_string = self.__class__.__name__ + '('
@@ -100,19 +101,6 @@ class RandomNoiseTransform(object):
             image = Image.fromarray(image.astype(np.uint8))
         return image, label
 
-class PaddTransform(object):
-    def __init__(self, pad_size = 32):
-        self.pad_size = pad_size
-
-    def __call__(self, image, label):
-        padding_x = self.pad_size-image.size[0]%self.pad_size
-        padding_x = (padding_x!=self.pad_size) * padding_x
-        padding_y = self.pad_size-image.size[1]%self.pad_size
-        padding_y = (padding_y!=self.pad_size) * padding_y
-        image_padded = transforms.functional.pad(image, (0, 0, padding_x, padding_y))
-        label_padded = transforms.functional.pad(label, (0, 0, padding_x, padding_y), fill=255)
-        return image_padded, label_padded
-
 class OutputTransform(object):
     def __init__(self):
         self.toTensor = transforms.ToTensor()
@@ -122,3 +110,19 @@ class OutputTransform(object):
         label = self.toTensor(label)
         label = (label>0.5).long().squeeze(0)
         return image, label
+
+class PaddTransform(object):
+    def __init__(self, pad_size = 32):
+        self.pad_size = pad_size
+        self.out_transform = OutputTransform()
+
+    def __call__(self, image, label):
+        lab_size = label.size
+        padding_x = self.pad_size-image.size[0]%self.pad_size
+        padding_x = (padding_x!=self.pad_size) * padding_x
+        padding_y = self.pad_size-image.size[1]%self.pad_size
+        padding_y = (padding_y!=self.pad_size) * padding_y
+        image_padded = transforms.functional.pad(image, (0, 0, padding_x, padding_y))
+        label_padded = transforms.functional.pad(label, (0, 0, padding_x, padding_y), fill=255)
+        image_padded, label_padded = self.out_transform(image_padded, label_padded)
+        return image_padded, label_padded, lab_size

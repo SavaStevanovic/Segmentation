@@ -19,8 +19,7 @@ class SegmentationDatasetProvider():
         if val_transforms is None:
             val_transforms = augmentation.PairCompose([
                                             augmentation.ResizeDownToSizeTransform(512),
-                                            augmentation.PaddTransform(pad_size=2**net.depth), 
-                                            augmentation.OutputTransform()])
+                                            augmentation.PaddTransform(pad_size=2**net.depth)])
 
         self.trainset      = SegmentationDataLoader(image_path = '/Data/dataset_10224_raw/raw_split/train/',      label_path = '/Data/dataset_10224_glass_full/glass_full', transform = train_transforms, testing = th_count==1)
         self.validationset = SegmentationDataLoader(image_path = '/Data/dataset_10224_raw/raw_split/validation/', label_path = '/Data/dataset_10224_glass_full/glass_full', transform = val_transforms,   testing = th_count==1)

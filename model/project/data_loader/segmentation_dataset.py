@@ -18,11 +18,12 @@ class SegmentationDataLoader(data.Dataset):
 
     def __getitem__(self, index):
             img_path, mask_path = self.data[index]
-            data = Image.open(img_path)
+            img = Image.open(img_path)
             label = Image.open(mask_path).convert('L')
+            data = img, label
             if self.transform is not None:
-                data, label = self.transform(data, label)
-            return data, label
+                data = self.transform(*data)
+            return data
 
     def __len__(self):
         return len(self.data)

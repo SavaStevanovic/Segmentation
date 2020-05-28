@@ -15,8 +15,11 @@ def metrics(net, dataloader, box_transform, epoch=1):
     images = []
     with torch.no_grad():
         for i, data in enumerate(tqdm(dataloader)):
-            image, labels = data
+            image, labels, size = data
             outputs = net(image.cuda())
+            outputs = outputs[:, :, :size[1], :size[0]]
+            image = image[:, :, :size[1], :size[0]]
+            labels = labels[:, :size[1], :size[0]]
             loss, focal_loss, dice_loss = criterion(outputs, labels.cuda())
             losses += loss.item()
             total_focal_loss += focal_loss
